@@ -4,13 +4,13 @@ const {
     getMovie,
     createMovie,
     getAllMovies,
-    updateMovie,
-    deleteMovie,
-//     bookMovie,
-//     cancelMovie 
-    } = require("../controllers/moviesController");
+    putRequest,
+//    updateMovie,
+//    bookMovie,
+//    cancelMovie,
+    deleteMovie} = require("../controllers/moviesController");
 
 router.route("/").get(getAllMovies).post(createMovie);
-router.route("/:id").get(getMovie).put(updateMovie).delete(deleteMovie);
+router.route("/:id").get(getMovie).put(putRequest).delete(deleteMovie);
 
 module.exports = router;

@@ -5,8 +5,9 @@ const Movie = require("../models/movieModel")
 //@route GET /api/movies
 //@access public
 //@userType All
+//{user_id: req.user.id}
 const getAllMovies = asyncHandler(async (req, res) => {
-    const movies = await Movie.find({user_id: req.user.id});
+    const movies = await Movie.find();
     res.status(200).json(movies);
 })
 
@@ -17,7 +18,7 @@ const getAllMovies = asyncHandler(async (req, res) => {
 //@userType Admin
 const createMovie = asyncHandler(async (req,res) => {
     console.log("The request body is :", req.body);
-    const {name, location, timings, description, trailer_link, cast_crew, availSeats, totalSeats} = req.body;
+    const {name, location, timings, description, trailer_link, cast_crew, totalSeats, availSeats} = req.body;
     if (!name || !location || !timings || !description || !totalSeats || !availSeats){
         res.status(400);
         throw new Error("All fields starred fields are mandatory");
@@ -51,6 +52,27 @@ const getMovie = asyncHandler(async (req, res) => {
     res.status(200).json(movie);
 })
 
+//@desc type of Put Request
+//@route REQUEST /api/movies/:id
+//@access private
+const putRequest = asyncHandler(async (req, res) => {
+    const movie = await Movie.findById(req.params.id);
+    if(!movie){
+        res.status(404);
+        throw new Error("Movie not found");
+    }
+    const action = req.body.action;
+    if(action == 'update'){
+        updateMovie;
+    }else if (action === 'book') {
+        bookMovie;
+    } else if (action === 'cancel') {
+        cancelMovie;
+    } else {
+    // Handle invalid action
+    res.status(400).json({ error: 'Invalid action' });
+    }
+})
 
 //@desc update Movie
 //@route UPDATE /api/movies/:id
@@ -146,8 +168,6 @@ module.exports = {
     getAllMovies,
     createMovie,
     getMovie,
-    updateMovie,
+    putRequest,
     deleteMovie,
-    bookMovie,
-    cancelMovie
 }
