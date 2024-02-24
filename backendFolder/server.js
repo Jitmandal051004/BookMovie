@@ -5,7 +5,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use("/api/movie", require("./routes/movieRoutes"));
+app.use("/api/movies", require("./routes/movieRoutes"));
 // app.use("")
 
 app.listen(port, () => {

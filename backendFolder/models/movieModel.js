@@ -29,11 +29,11 @@ const movieSchema = mongoose.Schema(
         cast_crew: {
             type: String,
         },
-        availSeats: {
+        totalSeats: {
             type: Number,
             required: [true, "Please add the total number of seats available"]
         },
-        leftSeats: {
+        availSeats: {
             type: Number,
             required: [true]
         }
