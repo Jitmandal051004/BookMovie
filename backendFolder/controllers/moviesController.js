@@ -63,11 +63,11 @@ const putRequest = asyncHandler(async (req, res) => {
     }
     const action = req.body.action;
     if(action == 'update'){
-        updateMovie;
+        updateMovie(req, res);
     }else if (action === 'book') {
-        bookMovie;
+        bookMovie(req, res);
     } else if (action === 'cancel') {
-        cancelMovie;
+        cancelMovie(req, res);
     } else {
     // Handle invalid action
     res.status(400).json({ error: 'Invalid action' });
@@ -85,12 +85,12 @@ const updateMovie = asyncHandler(async (req, res) => {
         throw new Error("Movie not found");
     }
 
-    if(movie.user_id.toString() !== req.user.id){
-        res.status(403);
-        throw new Error("User don't have permission to update Movie details");
-    }
+    // if(movie.user_id.toString() !== req.user.id){
+    //     res.status(403);
+    //     throw new Error("User don't have permission to update Movie details");
+    // }
 
-    const updateMovie = await Movie.findByIdAndUpdated(
+    const updateMovie = await Movie.findByIdAndUpdate(
         req.params.id,
         req.body,
         { new : true }
@@ -111,10 +111,10 @@ const deleteMovie = asyncHandler(async (req, res) => {
         throw new Error("Movie not found");
     }
 
-    if(movie.user_id.toString() !== req.user.id){
-        res.status(403);
-        throw new Error("User don't have permission to update Movie details");
-    }
+    // if(movie.user_id.toString() !== req.user.id){
+    //     res.status(403);
+    //     throw new Error("User don't have permission to delete Movie details");
+    // }
 
     await Movie.deleteOne({_id: req.params.id });
     res.status(200).json(updateMovie);
@@ -133,9 +133,15 @@ const bookMovie = asyncHandler(async (req, res) => {
 
     //we have to still verify that the user_type matches with User
 
-    const bookMovie = await Movie.findByIdAndUpdated(
+    const seatToBook = req.body.seatToBook;
+    if(!seatToBook){
+        res.status(404);
+        throw new Error("Please specify the number of seats to be booked");
+    }
+
+    const bookMovie = await Movie.findByIdAndUpdate(
         req.params.id,
-        {$inc: {availSeats: 1}},
+        {$inc: {availSeats: -seatToBook}},
         {new : true}
     );
     console.log("movie has been booked");
@@ -155,9 +161,15 @@ const cancelMovie = asyncHandler(async (req, res) => {
 
     //we have to still verify that the user_type matches with User
 
-    const cancelMovie = await Movie.findByIdAndUpdated(
+    const seatToCancel = req.body.seatToCancel;
+    if(!seatToCancel){
+        res.status(404);
+        throw new Error("Please specify the number of seats to be canceled");
+    }
+
+    const cancelSeat = await Movie.findByIdAndUpdate(
         req.params.id,
-        {$inc: {availSeats: -1}},
+        {$inc: {availSeats: seatToCancel}},
         {new : true}
     );
     console.log("movie has been cancelled");
