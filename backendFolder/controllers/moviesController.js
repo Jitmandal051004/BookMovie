@@ -65,9 +65,9 @@ const putRequest = asyncHandler(async (req, res) => {
     if(action == 'update'){
         updateMovie(req, res);
     }else if (action === 'book') {
-        bookMovie(req, res);
+        bookSeat(req, res);
     } else if (action === 'cancel') {
-        cancelMovie(req, res);
+        cancelSeat(req, res);
     } else {
     // Handle invalid action
     res.status(400).json({ error: 'Invalid action' });
@@ -124,7 +124,7 @@ const deleteMovie = asyncHandler(async (req, res) => {
 //@route Book /api/movies/:id
 //@access private 
 //@userType User
-const bookMovie = asyncHandler(async (req, res) => {
+const bookSeat = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
     if(!movie){
         res.status(404);
@@ -139,20 +139,32 @@ const bookMovie = asyncHandler(async (req, res) => {
         throw new Error("Please specify the number of seats to be booked");
     }
 
-    const bookMovie = await Movie.findByIdAndUpdate(
+    const bookSeat = await Movie.findByIdAndUpdate(
         req.params.id,
         {$inc: {availSeats: -seatToBook}},
         {new : true}
     );
+
+    let availSeats = await movie.availSeats;
+    if(availSeats < 0){
+        const currentSeats = await Movie.findByIdAndUpdate(
+            req.params.id,
+            {$inc: {availSeats: -seatToBook}},
+            {new : true}
+        );
+        res.status(403).json(currentSeats);
+        throw new Error("Maximum Seat crossed");
+    }
+
     console.log("movie has been booked");
-    res.status(200).json(bookMovie);
+    res.status(200).json(bookSeat);
 })
 
 //@desc Cancel Booked movie
 //@route Cancel /api/movies/:id
 //@access private 
 //@userType User
-const cancelMovie = asyncHandler(async (req, res) => {
+const cancelSeat = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
     if(!movie){
         res.status(404);
@@ -172,8 +184,21 @@ const cancelMovie = asyncHandler(async (req, res) => {
         {$inc: {availSeats: seatToCancel}},
         {new : true}
     );
+
+    let availSeats = await movie.availSeats;
+    const totalSeats = await movie.totalSeats;
+    if(availSeats >= totalSeats){
+        const currentSeat = await Movie.findByIdAndUpdate(
+            req.params.id,
+            {$inc: {availSeats: -seatToCancel}},
+            {new : true}
+        );
+        res.status(403).json(currentSeat);
+        throw new Error("Maximum Seat crossed");
+    }
+
     console.log("movie has been cancelled");
-    res.status(200).json(cancelMovie);
+    res.status(200).json(cancelSeat);
 })
 
 module.exports = {

@@ -9,6 +9,8 @@ const port = process.env.PORT || 4000;
 
 app.use(express.json());
 app.use("/api/movies", require("./routes/movieRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+//app.use("/api/admin", require("./routes/adminRoutes"));
 app.use(errorHandler);
 
 app.listen(port, () => {
