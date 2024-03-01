@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
-const Movie = require("../models/movieModel")
+const Movie = require("../models/movieModel");
+const validateToken = require("../middleware/validateTokenHandler");
 
 //@desc Get all movies
 //@route GET /api/movies
@@ -62,16 +63,34 @@ const putRequest = asyncHandler(async (req, res) => {
         throw new Error("Movie not found");
     }
     const action = req.body.action;
-    if(action == 'update'){
-        updateMovie(req, res);
-    }else if (action === 'book') {
-        bookSeat(req, res);
-    } else if (action === 'cancel') {
-        cancelSeat(req, res);
-    } else {
-    // Handle invalid action
-    res.status(400).json({ error: 'Invalid action' });
+    const userType = validateToken.userType;
+    if(userType){
+        console.log(`userType is: ${userType}`);
+    }else{
+        res.status(400);
+        console.log("no userType");
     }
+
+    if(userType == userN){
+        if (action === 'book') {
+            bookSeat(req, res);
+        } else if (action === 'cancel') {
+            cancelSeat(req, res);
+        } else {
+            res.status(400);
+            throw new Error("Invalid Action");
+        }
+    }else if(userType == admin){
+        if(action == 'update'){
+            updateMovie(req, res);
+        }else {
+            res.status(400);
+            throw new Error("Invalid Action");
+        }
+    }else{
+        res.status(401).json({ error: 'User not Authorized' });
+    }
+    
 })
 
 //@desc update Movie
@@ -79,12 +98,6 @@ const putRequest = asyncHandler(async (req, res) => {
 //@access private
 //@userType Admin 
 const updateMovie = asyncHandler(async (req, res) => {
-    const movie = await Movie.findById(req.params.id);
-    if(!movie){
-        res.status(404);
-        throw new Error("Movie not found");
-    }
-
     // if(movie.user_id.toString() !== req.user.id){
     //     res.status(403);
     //     throw new Error("User don't have permission to update Movie details");
@@ -105,19 +118,17 @@ const updateMovie = asyncHandler(async (req, res) => {
 //@access private 
 //@userType Admin
 const deleteMovie = asyncHandler(async (req, res) => {
-    const movie = await Movie.findById(req.params.id);
-    if(!movie){
-        res.status(404);
-        throw new Error("Movie not found");
-    }
-
     // if(movie.user_id.toString() !== req.user.id){
     //     res.status(403);
     //     throw new Error("User don't have permission to delete Movie details");
     // }
 
-    await Movie.deleteOne({_id: req.params.id });
-    res.status(200).json(updateMovie);
+    const movie = await Movie.findById(req.params.id);
+    if(movie.availSeats != movie.totalSeats){
+        await Movie.deleteOne({_id: req.params.id });
+        res.status(200).json(movie);
+    }
+    
 }) 
 
 //@desc Book movie
@@ -126,17 +137,17 @@ const deleteMovie = asyncHandler(async (req, res) => {
 //@userType User
 const bookSeat = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
-    if(!movie){
-        res.status(404);
-        throw new Error("Movie not found");
-    }
-
     //we have to still verify that the user_type matches with User
 
     const seatToBook = req.body.seatToBook;
     if(!seatToBook){
         res.status(404);
         throw new Error("Please specify the number of seats to be booked");
+    }
+
+    if(seatToBook > 4){
+        res.status(403);
+        throw new Error("Booking more than 4 seats is forbidden");
     }
 
     const bookSeat = await Movie.findByIdAndUpdate(
@@ -165,12 +176,6 @@ const bookSeat = asyncHandler(async (req, res) => {
 //@access private 
 //@userType User
 const cancelSeat = asyncHandler(async (req, res) => {
-    const movie = await Movie.findById(req.params.id);
-    if(!movie){
-        res.status(404);
-        throw new Error("Movie not found");
-    }
-
     //we have to still verify that the user_type matches with User
 
     const seatToCancel = req.body.seatToCancel;

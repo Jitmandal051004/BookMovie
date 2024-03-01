@@ -17,6 +17,28 @@ const userSchema = mongoose.Schema(
         userType: {
             type: String,
             enum: ["userN"]
+        },
+        movieBooked: {
+            movie_id: {
+                type: String,
+                required: [true]
+            },
+            name: {
+                type: String,
+                required: [true]
+            },
+            timeOfShow: {
+                type: String,
+                required: [true]
+            },
+            timeBooked: {
+                type: String,
+                required: [true]
+            },
+            numBookedSeats: {
+                type: String,
+                required: [true]
+            }
         }
     },
     {

@@ -9,8 +9,9 @@ const {
 //    bookMovie,
 //    cancelMovie,
     deleteMovie} = require("../controllers/moviesController");
-    const validateToken = require("../middleware/validateTokenHandler");
+const validateToken = require("../middleware/validateTokenHandler");
 
+router.use(validateToken);
 router.route("/").get(getAllMovies).post(createMovie);
 router.route("/:id").get(getMovie).put(putRequest).delete(validateToken, deleteMovie);
 

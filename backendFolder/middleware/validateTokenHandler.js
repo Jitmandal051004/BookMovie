@@ -12,6 +12,14 @@ const validateToken = asyncHandler(async (req, res, next) => {
                 throw new Error("User is not Authorized");
             }
             req.user = decoded.user;
+            const userType = req.user.userType;
+            if(userType){
+                console.log(`userType is: ${userType}`);
+            }else{
+                res.status(400);
+                console.log("no userType");
+            }
+            
             next();
         });
 
