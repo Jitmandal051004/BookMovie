@@ -1,36 +1,35 @@
 const asyncHandler = require("express-async-handler");
-const User = require("../models/userModel");
-const jwt = require("jsonwebtoken");
+const Admin = require("../models/adminModel");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 //@desc Register a user
 //@route POST /api/users/register
 //@access public 
-const registerUser = asyncHandler(async (req, res) => {
+const registerAdmin = asyncHandler(async (req, res) => {
     const {username, email, password} = req.body;
-    if(!username||!email||!password){
+    if(username || email || password){
         res.status(400);
         throw new Error("All fields starred are mandatory");
-    }
-    
-    const userAvailable = await User.findOne({email});
-    if(userAvailable){
-        res.status(400);
-        throw new Error("User already exist");
-    }
+    };
 
-    //Hashed Password
+    const adminAvailable = await Admin.findOne({email});
+    if(adminAvailable){
+        res.status(400);
+        throw new Error("Admin already exist");
+    };
+
     const hashedPassword = await bcrypt.hash(password, 10);
     console.log(`Hashed Password: ${hashedPassword}`);
-    const user = await User.create({
+    const admin = await Admin.create({
         username,
         email,
         password: hashedPassword,
-        userType: "userN"
+        userType: "admin"
     });
 
-    if(user){
-        res.status(201).json({_id: user.id, email: user.email });
+    if(admin){
+        res.status(201).json({_id: admin.id, email: admin.email });
     }else{
         res.status(400);
         throw new Error("User data is not valid");
@@ -40,25 +39,25 @@ const registerUser = asyncHandler(async (req, res) => {
 //@desc Login user
 //@route POST /api/users/login
 //@access public 
-const loginUser = asyncHandler(async (req, res) => {
+const loginAdmin = asyncHandler(async (req, res) => {
     const {email, password} = req.body;
     if(!email||!password){
         res.status(400);
         throw new Error("All fields starred fields are mandatory");
     }
 
-    const user = await User.findOne({email});
-    if(user && (await bcrypt.compare(password, user.password))){
+    const admin = await Admin.findOne({email});
+    if(admin && (await bcrypt.compare(password, user.password))){
         const accessToken = jwt.sign({
-                user: {
-                    username: user.username,
-                    email: user.email,
-                    id: user.id,
-                    userType: user.userType
-                }
-            }, 
-            process.env.ACCESS_TOKEN_SECRET,
-            {expiresIn: "30m"}
+            admin: {
+                username: admin.username,
+                email: admin.email,
+                id: admin.id,
+                userType: admin.userType
+            }
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {expiresIn: "30m"}
         );
         res.status(200).json({accessToken});
     }else{
@@ -67,17 +66,15 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 })
 
-
 //@desc Current user info
 //@route POST /api/users/current
-//@access private
-const currentUser = asyncHandler(async (req, res) => {
+//@access 
+const currentAdmin = asyncHandler(async (req,res) => {
     res.status(200).json(req.user);
 })
 
-
 module.exports = {
-    registerUser,
-    loginUser,
-    currentUser
+    registerAdmin,
+    loginAdmin,
+    currentAdmin
 }

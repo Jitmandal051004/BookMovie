@@ -33,7 +33,8 @@ const createMovie = asyncHandler(async (req,res) => {
         trailer_link, 
         cast_crew, 
         totalSeats,
-        availSeats, 
+        availSeats,
+        user_id: req.user.id
     })
 
     res.status(201).json(movie);

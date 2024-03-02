@@ -1,4 +1,8 @@
 const express = required("express");
 const router = express.Router();
+const { registerAdmin, loginAdmin, currentAdmin } = require("../controllers/adminController");
+const validateToken = require("../middleware/validateTokenHandler");
 
-router.post("/register", );
+router.post("/register", registerAdmin);
+router.post("/login", loginAdmin);
+router.post("/current", validateToken, currentAdmin);

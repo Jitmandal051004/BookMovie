@@ -19,6 +19,7 @@ const userSchema = mongoose.Schema(
             enum: ["userN"]
         },
         movieBooked: {
+            //has to be changed to mongoose.schema
             movie_id: {
                 type: String,
                 required: [true]
