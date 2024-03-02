@@ -4,10 +4,7 @@ const {
     getMovie,
     createMovie,
     getAllMovies,
-    putRequest,
-//    updateMovie,
-//    bookMovie,
-//    cancelMovie,
+    putRequest, //updateMovie, bookMovie, cancelMovie,
     deleteMovie} = require("../controllers/moviesController");
 const validateToken = require("../middleware/validateTokenHandler");
 
