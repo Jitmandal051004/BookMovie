@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 
 const movieSchema = mongoose.Schema(
     {
-        user_id: { 
+        admin_id: { 
             type: mongoose.Schema.Types.ObjectId,
             required: true,
-            ref: "User"
+            ref: "Admin"
         },
         name: {
             type: String,

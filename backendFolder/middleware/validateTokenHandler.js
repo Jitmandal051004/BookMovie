@@ -6,20 +6,17 @@ const validateToken = asyncHandler(async (req, res, next) => {
     let authHeader = req.headers.Authorization || req.headers.authorization;
     if(authHeader && authHeader.startsWith("Bearer")){
         token = authHeader.split(" ")[1];
+        console.log(token);
         jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
             if(err){
                 res.status(401);
                 throw new Error("User is not Authorized");
             }
             req.user = decoded.user;
-            const userType = req.user.userType;
-            if(userType){
-                console.log(`userType is: ${userType}`);
-            }else{
-                res.status(400);
-                console.log("no userType");
-            }
-            
+            console.log(req.user);
+            req.admin = decoded.admin;
+            console.log(req.admin);
+
             next();
         });
 

@@ -16,8 +16,8 @@ const adminSchema = mongoose.Schema(
         },
         userType: {
             type: String,
-            enum : ["userN"]
-        },
+            enum : ["admin"]
+        }
         // location: {
         //     type: String,
         //     required: [true, "Please provide your location"]

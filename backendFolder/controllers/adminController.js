@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 //@access public 
 const registerAdmin = asyncHandler(async (req, res) => {
     const {username, email, password} = req.body;
-    if(username || email || password){
+    if(!username || !email || !password){
         res.status(400);
         throw new Error("All fields starred are mandatory");
     };
@@ -47,7 +47,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
     }
 
     const admin = await Admin.findOne({email});
-    if(admin && (await bcrypt.compare(password, user.password))){
+    if(admin && (await bcrypt.compare(password, admin.password))){
         const accessToken = jwt.sign({
             admin: {
                 username: admin.username,
@@ -70,7 +70,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
 //@route POST /api/users/current
 //@access 
 const currentAdmin = asyncHandler(async (req,res) => {
-    res.status(200).json(req.user);
+    res.status(200).json(req.admin);
 })
 
 module.exports = {

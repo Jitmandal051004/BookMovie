@@ -6,32 +6,35 @@ const Movie = require("../models/movieModel");
 //@access private 
 //@userType Admin
 const createMovie = asyncHandler(async (req,res) => {
-    const userType = req.user.userType;
-    if(userType !== admin){
+    const userN = req.user;
+    const admin = req.admin;
+    if(userN){
         res.status(401);
         throw new Error("Normal User not authorized")
     }
 
-    console.log("The request body is :", req.body);
-    const {name, location, timings, description, trailer_link, cast_crew, totalSeats, availSeats} = req.body;
-    if (!name || !location || !timings || !description || !totalSeats || !availSeats){
-        res.status(400);
-        throw new Error("All fields starred fields are mandatory");
+    if(admin){
+        console.log("The request body is :", req.body);
+        const {name, location, timings, description, trailer_link, cast_crew, totalSeats, availSeats} = req.body;
+        if (!name || !location || !timings || !description || !totalSeats || !availSeats){
+            res.status(400);
+            throw new Error("All fields starred fields are mandatory");
+        }
+
+        const movie = await Movie.create({
+            name,
+            location, 
+            timings, 
+            description, 
+            trailer_link, 
+            cast_crew, 
+            totalSeats,
+            availSeats,
+            admin_id: admin.id
+        })
+
+        res.status(201).json(movie);
     }
-
-    const movie = await Movie.create({
-        name,
-        location, 
-        timings, 
-        description, 
-        trailer_link, 
-        cast_crew, 
-        totalSeats,
-        availSeats,
-        user_id: req.user.id
-    })
-
-    res.status(201).json(movie);
 })
 
 //@desc Get all movies
@@ -40,11 +43,12 @@ const createMovie = asyncHandler(async (req,res) => {
 //@userType All
 //{user_id: req.user.id}
 const getAllMovies = asyncHandler(async (req, res) => {
-    const userType = req.user.userType;
-    if(userType == admin){
+    const userN = req.user;
+    const admin = req.admin;
+    if(admin){
         const movies = await Movie.find({user_id: req.user.id});
         res.status(200).json(movies);
-    }else if(userType == userN){
+    }else if(userN){
         const movies = await Movie.find();
         res.status(200).json(movies);
     }
@@ -68,7 +72,7 @@ const getMovie = asyncHandler(async (req, res) => {
 //@access private 
 //@userType Admin
 const deleteMovie = asyncHandler(async (req, res) => {
-    if(movie.user_id.toString() !== req.user.id){
+    if(movie.admin_id.toString() !== req.admin.id){
         res.status(403);
         throw new Error("User don't have permission to delete Movie details");
     }
@@ -91,17 +95,10 @@ const putRequest = asyncHandler(async (req, res) => {
         throw new Error("Movie not found");
     }
     const action = req.body.action;
-    const userType = req.user.userType;
+    const userN = req.user;
+    const admin = req.admin;
 
-    //checkpoint of userType
-    if(userType){
-        console.log(`userType is: ${userType}`);
-    }else{
-        res.status(400);
-        console.log("no userType");
-    }
-
-    if(userType == userN){
+    if(userN){
         if (action === 'book') {
             bookSeat(req, res);
         } else if (action === 'cancel') {
@@ -110,7 +107,7 @@ const putRequest = asyncHandler(async (req, res) => {
             res.status(400);
             throw new Error("Invalid Action");
         }
-    }else if(userType == admin){
+    }else if(admin){
         if(action == 'update'){
             updateMovie(req, res);
         }else {
@@ -130,7 +127,7 @@ const putRequest = asyncHandler(async (req, res) => {
 const updateMovie = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
 
-    if(movie.user_id.toString() !== req.user.id){
+    if(movie.admin_id.toString() !== req.admin.id){
         res.status(403);
         throw new Error("User don't have permission to update Movie details");
     }
@@ -149,6 +146,7 @@ const updateMovie = asyncHandler(async (req, res) => {
 //@access private 
 //@userType User
 const bookSeat = asyncHandler(async (req, res) => {
+    const userN = req.user;
     const movie = await Movie.findById(req.params.id);
 
     const seatToBook = req.body.seatToBook;
@@ -178,6 +176,15 @@ const bookSeat = asyncHandler(async (req, res) => {
         res.status(403).json(currentSeats);
         throw new Error("Maximum Seat crossed");
     }
+
+    userN.movieBooked = {
+        movie_id: movie.id,
+        name: movie.name,
+        timeOfShow: movie.timings,
+        timeBooked: movie.updatedAt,
+        numBookedSeats: seatToBook
+    }
+    await userN.save();
 
     console.log("movie has been booked");
     res.status(200).json(bookSeat);
