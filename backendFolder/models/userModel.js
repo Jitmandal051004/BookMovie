@@ -22,23 +22,18 @@ const userSchema = mongoose.Schema(
             //has to be changed to mongoose.schema
             movie_id: {
                 type: String,
-                required: [true]
             },
             name: {
                 type: String,
-                required: [true]
             },
             timeOfShow: {
                 type: String,
-                required: [true]
             },
             timeBooked: {
                 type: String,
-                required: [true]
             },
             numBookedSeats: {
                 type: String,
-                required: [true]
             }
         }
     },

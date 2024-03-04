@@ -46,7 +46,7 @@ const getAllMovies = asyncHandler(async (req, res) => {
     const userN = req.user;
     const admin = req.admin;
     if(admin){
-        const movies = await Movie.find({user_id: req.user.id});
+        const movies = await Movie.find({admin_id: admin.id});
         res.status(200).json(movies);
     }else if(userN){
         const movies = await Movie.find();
@@ -72,12 +72,24 @@ const getMovie = asyncHandler(async (req, res) => {
 //@access private 
 //@userType Admin
 const deleteMovie = asyncHandler(async (req, res) => {
-    if(movie.admin_id.toString() !== req.admin.id){
+    const userN = req.user;
+    const admin = req.admin;
+
+    if(userN){
+        res.status(403);
+        throw new Error("User don't have permission to delete Movie details");
+    }
+
+    if(movie.admin_id.toString() !== admin.id){
         res.status(403);
         throw new Error("User don't have permission to delete Movie details");
     }
 
     const movie = await Movie.findById(req.params.id);
+    if(!movie){
+        res.status(404);
+        throw new Error("Movie not found");
+    }
     if(movie.availSeats !== movie.totalSeats){
         await Movie.deleteOne({_id: req.params.id });
         res.status(200).json(movie);
@@ -128,7 +140,7 @@ const updateMovie = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
 
     if(movie.admin_id.toString() !== req.admin.id){
-        res.status(403);
+        res.status(401);
         throw new Error("User don't have permission to update Movie details");
     }
 
@@ -184,7 +196,6 @@ const bookSeat = asyncHandler(async (req, res) => {
         timeBooked: movie.updatedAt,
         numBookedSeats: seatToBook
     }
-    await userN.save();
 
     console.log("movie has been booked");
     res.status(200).json(bookSeat);
