@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Movie = require("../models/movieModel");
+const User = require("../models/userModel");
 
 //@desc create movies
 //@route CREATE /api/movies
@@ -21,7 +22,13 @@ const createMovie = asyncHandler(async (req,res) => {
             throw new Error("All fields starred fields are mandatory");
         }
 
-        const movie = await Movie.create({
+        const movie = await Movie.findOne({name: name, timings: timings});
+        if(movie){
+            res.status(403);
+            throw new Error("Movie already exist")
+        }
+
+        const newMovie = await Movie.create({
             name,
             location, 
             timings, 
@@ -33,7 +40,7 @@ const createMovie = asyncHandler(async (req,res) => {
             admin_id: admin.id
         })
 
-        res.status(201).json(movie);
+        res.status(201).json(newMovie);
     }
 })
 
@@ -60,11 +67,23 @@ const getAllMovies = asyncHandler(async (req, res) => {
 //@userType All
 const getMovie = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
+    const userN = req.user;
+    const admin = req.admin;
+
     if(!movie){
         res.status(404);
         throw new Error("Movie not found");
     }
-    res.status(200).json(movie);
+    if(admin){
+        if(movie.admin_id.toString() !== admin.id){
+            res.status(403);
+            throw new Error("Admin don't have permission to get other Movie's details");
+        }
+        console.log(movie);
+        res.status(200).json(movie);
+    }else if(userN){
+        res.status(200).json(movie);
+    }    
 })
 
 //@desc delete movie
@@ -74,27 +93,31 @@ const getMovie = asyncHandler(async (req, res) => {
 const deleteMovie = asyncHandler(async (req, res) => {
     const userN = req.user;
     const admin = req.admin;
+    const movie = await Movie.findById(req.params.id);    
+
+    if(!movie){
+            res.status(404);
+            throw new Error("Movie not found");
+        }
 
     if(userN){
-        res.status(403);
+        res.status(401);
         throw new Error("User don't have permission to delete Movie details");
     }
-
     if(movie.admin_id.toString() !== admin.id){
         res.status(403);
-        throw new Error("User don't have permission to delete Movie details");
+        throw new Error("Admin don't have permission to delete other Movie details");
     }
 
-    const movie = await Movie.findById(req.params.id);
-    if(!movie){
-        res.status(404);
-        throw new Error("Movie not found");
-    }
-    if(movie.availSeats !== movie.totalSeats){
-        await Movie.deleteOne({_id: req.params.id });
-        res.status(200).json(movie);
-    }
     
+    if(movie.availSeats !== movie.totalSeats){
+        res.status(403);
+        throw new Error("Already booking started");
+    }
+
+    const deletedMovie = await Movie.findOneAndDelete({_id: req.params.id });
+    console.log("Deleted movie:", deletedMovie);
+    res.status(200).json({ message: "Movie deleted successfully", deletedMovie });
 }) 
 
 //@desc type of Put Request
@@ -160,8 +183,16 @@ const updateMovie = asyncHandler(async (req, res) => {
 const bookSeat = asyncHandler(async (req, res) => {
     const userN = req.user;
     const movie = await Movie.findById(req.params.id);
+    const user = await User.findById(userN.id);
 
+    let availSeats = await movie.availSeats;
     const seatToBook = req.body.seatToBook;
+
+    if(availSeats-seatToBook<0){
+        res.status(403).json(movie);
+        throw new Error("Seat not available");
+    }
+
     if(!seatToBook){
         res.status(404);
         throw new Error("Please specify the number of seats to be booked");
@@ -178,7 +209,7 @@ const bookSeat = asyncHandler(async (req, res) => {
         {new : true}
     );
 
-    let availSeats = await movie.availSeats;
+    
     if(availSeats < 0){
         const currentSeats = await Movie.findByIdAndUpdate(
             req.params.id,
@@ -189,14 +220,22 @@ const bookSeat = asyncHandler(async (req, res) => {
         throw new Error("Maximum Seat crossed");
     }
 
-    userN.movieBooked = {
-        movie_id: movie.id,
-        name: movie.name,
-        timeOfShow: movie.timings,
-        timeBooked: movie.updatedAt,
-        numBookedSeats: seatToBook
-    }
+    const updateUserMovies = await user.updateOne(
+        {
+            $set: {
+                movieBooked: {
+                    movie_id: movie.id,
+                    name: movie.name,
+                    timeOfShow: movie.timings,
+                    timeBooked: movie.updatedAt,
+                    numBookedSeats: seatToBook
+                }
+            }
+        },
+        { new: true }
+    );
 
+    console.log(updateUserMovies);
     console.log("movie has been booked");
     res.status(200).json(bookSeat);
 })
@@ -208,7 +247,17 @@ const bookSeat = asyncHandler(async (req, res) => {
 const cancelSeat = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
 
+    let availSeats = await movie.availSeats;
+    const totalSeats = await movie.totalSeats;
     const seatToCancel = req.body.seatToCancel;
+    console.log(`${availSeats}, ${totalSeats}, ${seatToCancel}`);
+
+    if(seatToCancel+availSeats>totalSeats){
+        res.status(403).json(movie);
+        throw new Error("Maximum Seat crossed");
+    }
+
+
     if(!seatToCancel){
         res.status(404);
         throw new Error("Please specify the number of seats to be canceled");
@@ -219,18 +268,6 @@ const cancelSeat = asyncHandler(async (req, res) => {
         {$inc: {availSeats: seatToCancel}},
         {new : true}
     );
-
-    let availSeats = await movie.availSeats;
-    const totalSeats = await movie.totalSeats;
-    if(availSeats >= totalSeats){
-        const currentSeat = await Movie.findByIdAndUpdate(
-            req.params.id,
-            {$inc: {availSeats: -seatToCancel}},
-            {new : true}
-        );
-        res.status(403).json(currentSeat);
-        throw new Error("Maximum Seat crossed");
-    }
 
     console.log("movie has been cancelled");
     res.status(200).json(cancelSeat);
