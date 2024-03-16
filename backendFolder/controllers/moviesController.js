@@ -183,7 +183,6 @@ const updateMovie = asyncHandler(async (req, res) => {
 const bookSeat = asyncHandler(async (req, res) => {
     const userN = req.user;
     const movie = await Movie.findById(req.params.id);
-    const user = await User.findById(userN.id);
 
     let availSeats = await movie.availSeats;
     const seatToBook = req.body.seatToBook;
@@ -209,35 +208,35 @@ const bookSeat = asyncHandler(async (req, res) => {
         {new : true}
     );
 
-    
-    if(availSeats < 0){
-        const currentSeats = await Movie.findByIdAndUpdate(
-            req.params.id,
-            {$inc: {availSeats: -seatToBook}},
-            {new : true}
-        );
-        res.status(403).json(currentSeats);
-        throw new Error("Maximum Seat crossed");
+    const bookedMovieDetail = {
+        movie_id: movie.id,
+        name: movie.name,
+        timeOfShow: movie.timings,
+        timeBooked: movie.updatedAt,
+        numBookedSeats: seatToBook
     }
-
-    const updateUserMovies = await user.updateOne(
+    console.log(bookedMovieDetail);
+    const userWithMovieBooked = await User.findOne(
+        { _id: userN.id, movieBooked: { $elemMatch: {movie_id: movie.id, timeOfShow: movie.timings} } },
+        { movieBooked: 1 }
+    );
+    console.log(`already booked movie: ${userWithMovieBooked}`);
+    if(userWithMovieBooked){
+        res.status(401);
+        throw new Error("Movie Already Booked");
+    }
+    
+    const updateUserMovies = await User.updateOne(
         {
-            $set: {
-                movieBooked: {
-                    movie_id: movie.id,
-                    name: movie.name,
-                    timeOfShow: movie.timings,
-                    timeBooked: movie.updatedAt,
-                    numBookedSeats: seatToBook
-                }
-            }
+            _id: userN.id
         },
+        { $push: { movieBooked: bookedMovieDetail } },
         { new: true }
     );
 
-    console.log(updateUserMovies);
-    console.log("movie has been booked");
-    res.status(200).json(bookSeat);
+    console.log(`movie has been booked:\n ${bookSeat}`);
+    console.log(`updated User Profile:\n ${updateUserMovies}`)
+    res.status(200).json(updateUserMovies);
 })
 
 //@desc Cancel Booked movie
@@ -246,17 +245,17 @@ const bookSeat = asyncHandler(async (req, res) => {
 //@userType User
 const cancelSeat = asyncHandler(async (req, res) => {
     const movie = await Movie.findById(req.params.id);
+    const userN = req.user;
 
     let availSeats = await movie.availSeats;
     const totalSeats = await movie.totalSeats;
     const seatToCancel = req.body.seatToCancel;
     console.log(`${availSeats}, ${totalSeats}, ${seatToCancel}`);
 
-    if(seatToCancel+availSeats>totalSeats){
+    if(seatToCancel+availSeats>totalSeats || availSeats==totalSeats){
         res.status(403).json(movie);
         throw new Error("Maximum Seat crossed");
     }
-
 
     if(!seatToCancel){
         res.status(404);
@@ -269,7 +268,15 @@ const cancelSeat = asyncHandler(async (req, res) => {
         {new : true}
     );
 
-    console.log("movie has been cancelled");
+    const updateUserMovies = await User.updateOne(
+        {
+            _id: userN.id
+        },
+        { $pull: { movieBooked: { movie_id: movie.id } } },
+        { new: true }
+    );
+
+    console.log(`movie has been cancelled:\n ${updateUserMovies}`);
     res.status(200).json(cancelSeat);
 })
 

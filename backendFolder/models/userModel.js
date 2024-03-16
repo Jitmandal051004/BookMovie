@@ -18,24 +18,15 @@ const userSchema = mongoose.Schema(
             type: String,
             enum: ["userN"]
         },
-        movieBooked: {
-            //has to be changed to mongoose.schema
-            movie_id: {
-                type: String,
+        movieBooked: [
+            {
+                movie_id: String,
+                name: String,
+                timeOfShow: String,
+                timeBooked: String,
+                numBookedSeats: String
             },
-            name: {
-                type: String,
-            },
-            timeOfShow: {
-                type: String,
-            },
-            timeBooked: {
-                type: String,
-            },
-            numBookedSeats: {
-                type: String,
-            }
-        }
+        ]
     },
     {
         timestamps: true
