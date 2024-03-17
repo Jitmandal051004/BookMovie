@@ -66,5 +66,8 @@ The backend exposes various endpoints for user authentication, movie management,
 
 [API Documentation](https://www.postman.com/what-is-an-api/)
 
-## Helpful Resource - https://www.youtube.com/watch?v=H9M02of22z4&t=3210s 
+## Helpful Resource - 
 
+1. [Learn Node.js & Express with Project in 2 Hours by Dipesh Malvia](https://www.youtube.com/watch?v=H9M02of22z4&t=3210s) 
+
+2. [The Odin Project](https://www.theodinproject.com/paths/full-stack-javascript/courses/nodejs)
